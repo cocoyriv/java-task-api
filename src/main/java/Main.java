@@ -67,6 +67,25 @@ public class Main {
                 ctx.status(404).result("Error: Task #" + taskId + " not found.");
             }
         });
+        
+                // 4. DELETE Endpoint: Remove a task by its ID
+        // You will call: /tasks?id=1
+        app.delete("/tasks", ctx -> {
+            String idParam = ctx.queryParam("id");
+            if (idParam == null) {
+                ctx.status(400).result("Error: 'id' parameter is missing!");
+                return;
+            }
+
+            int taskId = Integer.parseInt(idParam);
+            boolean deleted = deleteTaskFromDb(taskId);
+
+            if (deleted) {
+                ctx.result("Task #" + taskId + " was deleted successfully!");
+            } else {
+                ctx.status(404).result("Error: Task #" + taskId + " not found.");
+            }
+        });
 
     }
 
@@ -144,6 +163,22 @@ public class Main {
             
         } catch (SQLException e) {
             System.out.println("Update complete error: " + e.getMessage());
+            return false;
+        }
+    }
+
+        // Deletes a task from the SQLite table using its ID
+    private static boolean deleteTaskFromDb(int id) {
+        String sql = "DELETE FROM tasks WHERE id = ?";
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, id);
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0; // Returns true if a row was actually deleted
+            
+        } catch (SQLException e) {
+            System.out.println("Delete error: " + e.getMessage());
             return false;
         }
     }
