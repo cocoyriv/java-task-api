@@ -48,6 +48,26 @@ public class Main {
             int generatedId = insertTask(description);
             ctx.status(201).json(new Task(generatedId, description));
         });
+
+        // 3. POST Endpoint: Complete a task by its ID
+        // You will call: /tasks/complete?id=1
+        app.post("/tasks/complete", ctx -> {
+            String idParam = ctx.queryParam("id");
+            if (idParam == null) {
+                ctx.status(400).result("Error: 'id' parameter is missing!");
+                return;
+            }
+
+            int taskId = Integer.parseInt(idParam);
+            boolean updated = completeTaskInDb(taskId);
+
+            if (updated) {
+                ctx.result("Task #" + taskId + " marked as completed!");
+            } else {
+                ctx.status(404).result("Error: Task #" + taskId + " not found.");
+            }
+        });
+
     }
 
      // Connects to SQLite and creates the table if it is missing
@@ -111,4 +131,21 @@ public class Main {
         }
         return tasks;
     }
+
+    // Updates a task's is_completed flag to true (1) in SQLite
+    private static boolean completeTaskInDb(int id) {
+        String sql = "UPDATE tasks SET is_completed = 1 WHERE id = ?";
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, id);
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0; // Returns true if a row was actually updated
+            
+        } catch (SQLException e) {
+            System.out.println("Update complete error: " + e.getMessage());
+            return false;
+        }
+    }
+
 }
